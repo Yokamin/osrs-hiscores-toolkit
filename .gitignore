@@ -32,3 +32,8 @@ wheels/
 # IDE / Editor files
 .idea/
 .vscode/
+
+# Project-specific ignores
+NOTES.md
+app.log
+debug.log
