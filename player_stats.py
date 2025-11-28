@@ -20,7 +20,7 @@ def _load_xp_table() -> List[int]:
                 _xp_table = json.load(f)
             logger.info("XP table loaded successfully from %s.", file_path)
         except FileNotFoundError:
-            logger.error("XP table file not found at %s.", file_path)
+            logger.error("XP table file not found at %s. Ensure data/xp_table.json exists.", file_path)
             _xp_table = []
         except json.JSONDecodeError:
             logger.error("Failed to decode XP table JSON from %s.", file_path)
@@ -29,7 +29,15 @@ def _load_xp_table() -> List[int]:
 
 # --- Tier 1: Simple Getters ---
 def get_skill_level(player_data: Dict, skill_name: str) -> Optional[int]:
-    """Retrieves the level for a specific skill from player data."""
+    """Retrieves the level for a specific skill from player data.
+
+    Args:
+        player_data (Dict): The raw player data dictionary from the API.
+        skill_name (str): The name of the skill (e.g., "Attack").
+
+    Returns:
+        Optional[int]: The skill level as an integer, or None if not found.
+    """
     logger.debug("Attempting to get level for skill: '%s'", skill_name)
     skill_data = hiscores_parser.get_skill_data(player_data, skill_name)
     if skill_data and 'level' in skill_data:
@@ -40,7 +48,15 @@ def get_skill_level(player_data: Dict, skill_name: str) -> Optional[int]:
     return None
 
 def get_skill_xp(player_data: Dict, skill_name: str) -> Optional[int]:
-    """Retrieves the experience for a specific skill from player data."""
+    """Retrieves the experience for a specific skill from player data.
+
+    Args:
+        player_data (Dict): The raw player data dictionary from the API.
+        skill_name (str): The name of the skill (e.g., "Attack").
+        
+    Returns:
+        Optional[int]: The skill XP as an integer, or None if not found.
+    """
     logger.debug("Attempting to get XP for skill: '%s'", skill_name)
     skill_data = hiscores_parser.get_skill_data(player_data, skill_name)
     if skill_data and 'xp' in skill_data:
@@ -51,7 +67,15 @@ def get_skill_xp(player_data: Dict, skill_name: str) -> Optional[int]:
     return None
 
 def get_skill_rank(player_data: Dict, skill_name: str) -> Optional[int]:
-    """Retrieves the rank for a specific skill from player data."""
+    """Retrieves the rank for a specific skill from player data.
+
+    Args:
+        player_data (Dict): The raw player data dictionary from the API.
+        skill_name (str): The name of the skill (e.g., "Attack").
+        
+    Returns:
+        Optional[int]: The skill rank as an integer, or None if not found.
+    """
     logger.debug("Attempting to get rank for skill: '%s'", skill_name)
     skill_data = hiscores_parser.get_skill_data(player_data, skill_name)
     if skill_data and 'rank' in skill_data:
@@ -121,12 +145,12 @@ def get_level_for_xp(xp: int) -> int:
 def calculate_combat_level(player_data: Dict) -> Optional[float]:
     """Calculates a player's exact combat level based on the OSRS Wiki formula."""
     logger.info("Calculating combat level...")
-    required_skills = [
+    combat_skills = [
         "Attack", "Strength", "Defence", "Hitpoints", "Ranged", "Prayer", "Magic"
     ]
 
     levels = {}
-    for skill in required_skills:
+    for skill in combat_skills:
         level = get_skill_level(player_data, skill)
         if level is None:
             logger.error("Cannot calculate combat level: missing required skill '%s'.", skill)
@@ -183,3 +207,155 @@ def get_xp_for_next_level(current_xp: int) -> Optional[int]:
     
     logger.info("XP needed from %d to reach level %d: %d", current_xp, current_level + 1, xp_needed)
     return xp_needed
+
+def calculate_total_combat_xp(player_data: Dict) -> Optional[int]:
+    """Calculates the total experience for all combat-related skills for a player.
+
+    Treats unranked skills (-1 XP) or missing skills as having 0 XP for summation.
+
+    Args:
+        player_data (Dict): The raw player data dictionary from the API.
+
+    Returns:
+        Optional[int]: The total combat XP as an integer, or None if player_data is invalid.
+    """
+    logger.info("Calculating total combat XP...")
+    combat_skills = [
+        "Attack", "Strength", "Defence", "Hitpoints", "Ranged", "Prayer", "Magic"
+    ]
+    
+    total_combat_xp = 0
+    for skill in combat_skills:
+        xp = get_skill_xp(player_data, skill)
+        if xp is None or xp < 0: # Treat None or -1 (unranked) as 0 for summation
+            logger.debug("Skill '%s' XP not found or unranked (XP: %s), treating as 0.", skill, xp)
+            xp_to_add = 0
+        else:
+            xp_to_add = xp
+        total_combat_xp += xp_to_add
+        logger.debug("Added %d XP from '%s'. Current total: %d", xp_to_add, skill, total_combat_xp)
+        
+    logger.info("Total combat XP calculated: %d", total_combat_xp)
+    return total_combat_xp
+
+def calculate_total_non_combat_xp(player_data: Dict) -> Optional[int]:
+    """Calculates the total experience for all non-combat skills for a player.
+
+    Treats unranked skills (-1 XP) or missing skills as having 0 XP for summation.
+
+    Args:
+        player_data (Dict): The raw player data dictionary from the API.
+
+    Returns:
+        Optional[int]: The total non-combat XP as an integer, or None if player_data is invalid.
+    """
+    logger.info("Calculating total non-combat XP...")
+    non_combat_skills = [
+        "Farming", "Fishing", "Hunter", "Mining", "Woodcutting", "Cooking", "Crafting",
+        "Fletching", "Herblore", "Runecraft", "Smithing", "Agility", "Construction",
+        "Firemaking", "Slayer", "Thieving", "Sailing"
+    ]
+
+    total_non_combat_xp = 0
+    for skill in non_combat_skills:
+        xp = get_skill_xp(player_data, skill)
+        if xp is None or xp < 0:
+            logger.debug("Skill '%s' XP not found or unranked (XP: %s), treating as 0.", skill, xp)
+            xp_to_add = 0
+        else:
+            xp_to_add = xp
+        total_non_combat_xp += xp_to_add
+        logger.debug("Added %d XP from '%s'. Current total: %d", xp_to_add, skill, total_non_combat_xp)
+        
+    logger.info("Total non-combat XP calculated: %d", total_non_combat_xp)
+    return total_non_combat_xp
+
+def calculate_total_gathering_xp(player_data: Dict) -> Optional[int]:
+    """Calculates the total experience for all gathering skills for a player.
+
+    Treats unranked skills (-1 XP) or missing skills as having 0 XP for summation.
+
+    Args:
+        player_data (Dict): The raw player data dictionary from the API.
+
+    Returns:
+        Optional[int]: The total gathering XP as an integer, or None if player_data is invalid.
+    """
+    logger.info("Calculating total gathering XP...")
+    gathering_skills = [
+        "Farming", "Fishing", "Hunter", "Mining", "Woodcutting"
+    ]
+
+    total_gathering_xp = 0
+    for skill in gathering_skills:
+        xp = get_skill_xp(player_data, skill)
+        if xp is None or xp < 0:
+            logger.debug("Skill '%s' XP not found or unranked (XP: %s), treating as 0.", skill, xp)
+            xp_to_add = 0
+        else:
+            xp_to_add = xp
+        total_gathering_xp += xp_to_add
+        logger.debug("Added %d XP from '%s'. Current total: %d", xp_to_add, skill, total_gathering_xp)
+        
+    logger.info("Total gathering XP calculated: %d", total_gathering_xp)
+    return total_gathering_xp
+
+def calculate_total_production_xp(player_data: Dict) -> Optional[int]:
+    """Calculates the total experience for all production skills for a player.
+
+    Treats unranked skills (-1 XP) or missing skills as having 0 XP for summation.
+
+    Args:
+        player_data (Dict): The raw player data dictionary from the API.
+
+    Returns:
+        Optional[int]: The total production XP as an integer, or None if player_data is invalid.
+    """
+    logger.info("Calculating total production XP...")
+    production_skills = [
+        "Cooking", "Crafting", "Fletching", "Herblore", "Runecraft", "Smithing"
+    ]
+
+    total_production_xp = 0
+    for skill in production_skills:
+        xp = get_skill_xp(player_data, skill)
+        if xp is None or xp < 0:
+            logger.debug("Skill '%s' XP not found or unranked (XP: %s), treating as 0.", skill, xp)
+            xp_to_add = 0
+        else:
+            xp_to_add = xp
+        total_production_xp += xp_to_add
+        logger.debug("Added %d XP from '%s'. Current total: %d", xp_to_add, skill, total_production_xp)
+        
+    logger.info("Total production XP calculated: %d", total_production_xp)
+    return total_production_xp
+
+def calculate_total_utility_xp(player_data: Dict) -> Optional[int]:
+    """Calculates the total experience for all utility skills for a player.
+
+    Treats unranked skills (-1 XP) or missing skills as having 0 XP for summation.
+
+    Args:
+        player_data (Dict): The raw player data dictionary from the API.
+
+    Returns:
+        Optional[int]: The total utility XP as an integer, or None if player_data is invalid.
+    """
+    logger.info("Calculating total utility XP...")
+    utility_skills = [
+        "Agility", "Construction", "Firemaking", "Slayer", "Thieving", "Sailing"
+    ]
+
+    total_utility_xp = 0
+    for skill in utility_skills:
+        xp = get_skill_xp(player_data, skill)
+        if xp is None or xp < 0:
+            logger.debug("Skill '%s' XP not found or unranked (XP: %s), treating as 0.", skill, xp)
+            xp_to_add = 0
+        else:
+            xp_to_add = xp
+        total_utility_xp += xp_to_add
+        logger.debug("Added %d XP from '%s'. Current total: %d", xp_to_add, skill, total_utility_xp)
+        
+    logger.info("Total utility XP calculated: %d", total_utility_xp)
+    return total_utility_xp
