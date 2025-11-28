@@ -1,0 +1,72 @@
+[
+    {
+        "name": "TestUser",
+        "skills": [
+            {"name": "Attack", "level": 93}, {"name": "Strength", "level": 96},
+            {"name": "Defence", "level": 86}, {"name": "Hitpoints", "level": 95},
+            {"name": "Ranged", "level": 91}, {"name": "Prayer", "level": 77},
+            {"name": "Magic", "level": 79}
+        ],
+        "expected_combat_level": 116.175
+    },
+    {
+        "name": "Skiller",
+        "skills": [
+            {"name": "Attack", "level": 1}, {"name": "Strength", "level": 1},
+            {"name": "Defence", "level": 1}, {"name": "Hitpoints", "level": 10},
+            {"name": "Ranged", "level": 1}, {"name": "Prayer", "level": 1},
+            {"name": "Magic", "level": 1}
+        ],
+        "expected_combat_level": 3.4
+    },
+    {
+        "name": "Maxed Zerker",
+        "skills": [
+            {"name": "Attack", "level": 99}, {"name": "Strength", "level": 99},
+            {"name": "Defence", "level": 45}, {"name": "Hitpoints", "level": 99},
+            {"name": "Ranged", "level": 99}, {"name": "Prayer", "level": 52},
+            {"name": "Magic", "level": 99}
+        ],
+        "expected_combat_level": 106.85
+    },
+    {
+        "name": "Barrows Pure",
+        "skills": [
+            {"name": "Attack", "level": 99}, {"name": "Strength", "level": 99},
+            {"name": "Defence", "level": 70}, {"name": "Hitpoints", "level": 99},
+            {"name": "Ranged", "level": 99}, {"name": "Prayer", "level": 77},
+            {"name": "Magic", "level": 99}
+        ],
+        "expected_combat_level": 116.1
+    },
+    {
+        "name": "Random Account 1",
+        "skills": [
+            {"name": "Attack", "level": 90}, {"name": "Strength", "level": 93},
+            {"name": "Defence", "level": 89}, {"name": "Hitpoints", "level": 94},
+            {"name": "Ranged", "level": 87}, {"name": "Prayer", "level": 73},
+            {"name": "Magic", "level": 86}
+        ],
+        "expected_combat_level": 114.225
+    },
+    {
+        "name": "Random Account 2",
+        "skills": [
+            {"name": "Attack", "level": 75}, {"name": "Strength", "level": 82},
+            {"name": "Defence", "level": 74}, {"name": "Hitpoints", "level": 80},
+            {"name": "Ranged", "level": 76}, {"name": "Prayer", "level": 70},
+            {"name": "Magic", "level": 85}
+        ],
+        "expected_combat_level": 98.275
+    },
+    {
+        "name": "Maxed Combat",
+        "skills": [
+            {"name": "Attack", "level": 99}, {"name": "Strength", "level": 99},
+            {"name": "Defence", "level": 99}, {"name": "Hitpoints", "level": 99},
+            {"name": "Ranged", "level": 99}, {"name": "Prayer", "level": 99},
+            {"name": "Magic", "level": 99}
+        ],
+        "expected_combat_level": 126.1
+    }
+]
