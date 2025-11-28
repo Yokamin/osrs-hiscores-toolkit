@@ -1,6 +1,12 @@
 import pytest
 import requests
 from osrs_hiscores_api import build_url, fetch_hiscore, HiscoreModeError, HiscoreFormatError, HiscoreHTTPError
+import logging
+
+# Set up a test logger (optional, but good for seeing logs during test runs)
+# Test loggers usually capture output, not write to files, but for manual inspection it's okay
+test_logger = logging.getLogger(__name__)
+test_logger.setLevel(logging.DEBUG) # Ensure all levels are captured by the test environment
 
 # --- Tests for build_url ---
 
@@ -32,10 +38,12 @@ def test_fetch_hiscore_success_json(monkeypatch):
     
     class MockResponse:
         ok = True
+        status_code = 200
         def json(self):
             return fake_data
 
     def mock_get(*args, **kwargs):
+        test_logger.debug("Mocking requests.get for JSON success.")
         return MockResponse()
 
     monkeypatch.setattr(requests, "get", mock_get)
@@ -49,9 +57,11 @@ def test_fetch_hiscore_success_csv(monkeypatch):
     
     class MockResponse:
         ok = True
+        status_code = 200
         text = fake_data
 
     def mock_get(*args, **kwargs):
+        test_logger.debug("Mocking requests.get for CSV success.")
         return MockResponse()
 
     monkeypatch.setattr(requests, "get", mock_get)
@@ -62,6 +72,7 @@ def test_fetch_hiscore_success_csv(monkeypatch):
 def test_fetch_hiscore_http_error(monkeypatch):
     """Tests that fetch_hiscore raises HiscoreHTTPError on a request exception."""
     def mock_get_raises(*args, **kwargs):
+        test_logger.debug("Mocking requests.get to raise RequestException.")
         raise requests.RequestException("Test network error")
 
     monkeypatch.setattr(requests, "get", mock_get_raises)
@@ -76,6 +87,7 @@ def test_fetch_hiscore_bad_status_code(monkeypatch):
         status_code = 404
 
     def mock_get(*args, **kwargs):
+        test_logger.debug("Mocking requests.get for bad status code (404).")
         return MockResponse()
 
     monkeypatch.setattr(requests, "get", mock_get)
@@ -87,7 +99,9 @@ def test_fetch_hiscore_bad_json(monkeypatch):
     """Tests that fetch_hiscore raises HiscoreHTTPError on invalid JSON."""
     class MockResponse:
         ok = True
+        status_code = 200
         def json(self):
+            test_logger.debug("Mocking requests.get to raise ValueError for bad JSON.")
             raise ValueError("Failed to decode JSON")
 
     def mock_get(*args, **kwargs):
