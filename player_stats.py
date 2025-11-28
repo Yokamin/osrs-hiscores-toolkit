@@ -36,15 +36,7 @@ def _load_xp_table() -> List[int]:
 
 # --- Tier 1: Simple Getters ---
 def get_skill_level(player_data: Dict, skill_name: str) -> Optional[int]:
-    """Retrieves the level for a specific skill from player data.
-
-    Args:
-        player_data (Dict): The raw player data dictionary from the API.
-        skill_name (str): The name of the skill (e.g., "Attack").
-
-    Returns:
-        Optional[int]: The skill level as an integer, or None if not found.
-    """
+    """Retrieves the level for a specific skill from player data."""
     logger.debug("Attempting to get level for skill: '%s'", skill_name)
     skill_data = hiscores_parser.get_skill_data(player_data, skill_name)
     if skill_data and 'level' in skill_data:
@@ -55,15 +47,7 @@ def get_skill_level(player_data: Dict, skill_name: str) -> Optional[int]:
     return None
 
 def get_skill_xp(player_data: Dict, skill_name: str) -> Optional[int]:
-    """Retrieves the experience for a specific skill from player data.
-
-    Args:
-        player_data (Dict): The raw player data dictionary from the API.
-        skill_name (str): The name of the skill (e.g., "Attack").
-        
-    Returns:
-        Optional[int]: The skill XP as an integer, or None if not found.
-    """
+    """Retrieves the experience for a specific skill from player data."""
     logger.debug("Attempting to get XP for skill: '%s'", skill_name)
     skill_data = hiscores_parser.get_skill_data(player_data, skill_name)
     if skill_data and 'xp' in skill_data:
@@ -74,15 +58,7 @@ def get_skill_xp(player_data: Dict, skill_name: str) -> Optional[int]:
     return None
 
 def get_skill_rank(player_data: Dict, skill_name: str) -> Optional[int]:
-    """Retrieves the rank for a specific skill from player data.
-
-    Args:
-        player_data (Dict): The raw player data dictionary from the API.
-        skill_name (str): The name of the skill (e.g., "Attack").
-        
-    Returns:
-        Optional[int]: The skill rank as an integer, or None if not found.
-    """
+    """Retrieves the rank for a specific skill from player data."""
     logger.debug("Attempting to get rank for skill: '%s'", skill_name)
     skill_data = hiscores_parser.get_skill_data(player_data, skill_name)
     if skill_data and 'rank' in skill_data:
@@ -129,14 +105,7 @@ def get_activity_rank(player_data: Dict, activity_name: str) -> Optional[int]:
 # --- Tier 2: Status Checks ---
 
 def is_maxed_total(player_data: Dict) -> bool:
-    """Checks if a player has the maximum total level.
-
-    Args:
-        player_data (Dict): The raw player data dictionary from the API.
-
-    Returns:
-        bool: True if the player is maxed, False otherwise.
-    """
+    """Checks if a player has the maximum total level."""
     logger.info("Checking for max total level...")
     total_level = get_total_level(player_data)
     is_maxed = total_level == MAX_TOTAL_LEVEL
@@ -144,14 +113,7 @@ def is_maxed_total(player_data: Dict) -> bool:
     return is_maxed
 
 def is_maxed_combat(player_data: Dict) -> bool:
-    """Checks if a player has maxed all combat skills (level 99).
-
-    Args:
-        player_data (Dict): The raw player data dictionary from the API.
-
-    Returns:
-        bool: True if all combat skills are 99, False otherwise.
-    """
+    """Checks if a player has maxed all combat skills (level 99)."""
     logger.info("Checking for max combat...")
     for skill in COMBAT_SKILLS:
         level = get_skill_level(player_data, skill)
@@ -218,14 +180,7 @@ def calculate_combat_level(player_data: Dict) -> Optional[float]:
     return combat_level
 
 def get_xp_for_next_level(current_xp: int) -> Optional[int]:
-    """Calculates the XP required to reach the next skill level.
-
-    Args:
-        current_xp (int): The player's current total XP for a skill.
-
-    Returns:
-        Optional[int]: The XP needed for the next level, or None if at max level.
-    """
+    """Calculates the XP required to reach the next skill level."""
     logger.info("Calculating XP needed for next level from current XP: %d", current_xp)
     xp_table = _load_xp_table()
     if not xp_table:
@@ -240,7 +195,7 @@ def get_xp_for_next_level(current_xp: int) -> Optional[int]:
         logger.info("Player is at max level (%d).", max_level)
         return None
     
-    # The XP for the NEXT level (e.g., level 2) is at index `current_level` (e.g., index 1)
+    # The XP for the NEXT level (e.g., level 2) is at index 1, which corresponds to `current_level`
     xp_for_next_level = xp_table[current_level]
     xp_needed = xp_for_next_level - current_xp
     
@@ -248,29 +203,18 @@ def get_xp_for_next_level(current_xp: int) -> Optional[int]:
     return xp_needed
 
 def get_xp_to_level(current_xp: int, target_level: int) -> Optional[int]:
-    """Calculates the XP required to reach a target skill level.
-
-    Args:
-        current_xp (int): The player's current total XP for a skill.
-        target_level (int): The desired target level.
-
-    Returns:
-        Optional[int]: The amount of XP needed to reach the target level.
-                       Returns 0 if the player is already at or past the target level.
-                       Returns None if the target level is invalid.
-    """
+    """Calculates the XP required to reach a target skill level."""
     logger.info("Calculating XP from %d to reach level %d...", current_xp, target_level)
     xp_table = _load_xp_table()
     if not xp_table:
         logger.error("XP table not available, cannot perform calculation.")
         return None
     
-    # Validate target level
-    if not (1 < target_level <= len(xp_table)):
-        logger.error("Invalid target level: %d. Must be between 2 and %d.", target_level, len(xp_table))
+    max_level = len(xp_table)
+    if not (1 < target_level <= max_level):
+        logger.error("Invalid target level: %d. Must be between 2 and %d.", target_level, max_level)
         return None
 
-    # Get XP required for the target level. Index is level - 1.
     xp_for_target = xp_table[target_level - 1]
 
     if current_xp >= xp_for_target:
@@ -282,7 +226,7 @@ def get_xp_to_level(current_xp: int, target_level: int) -> Optional[int]:
     logger.info("XP needed to reach level %d: %d", target_level, xp_needed)
     return xp_needed
 
-def calculate_total_combat_xp(player_data: Dict) -> Optional[int]:
+def calculate_total_combat_xp(player_data: Dict) -> int:
     """Calculates the total experience for all combat-related skills for a player."""
     logger.info("Calculating total combat XP...")
     
@@ -298,7 +242,7 @@ def calculate_total_combat_xp(player_data: Dict) -> Optional[int]:
     logger.info("Total combat XP calculated: %d", total_combat_xp)
     return total_combat_xp
 
-def calculate_total_non_combat_xp(player_data: Dict) -> Optional[int]:
+def calculate_total_non_combat_xp(player_data: Dict) -> int:
     """Calculates the total experience for all non-combat skills for a player."""
     logger.info("Calculating total non-combat XP...")
     non_combat_skills = [
@@ -319,7 +263,7 @@ def calculate_total_non_combat_xp(player_data: Dict) -> Optional[int]:
     logger.info("Total non-combat XP calculated: %d", total_non_combat_xp)
     return total_non_combat_xp
 
-def calculate_total_gathering_xp(player_data: Dict) -> Optional[int]:
+def calculate_total_gathering_xp(player_data: Dict) -> int:
     """Calculates the total experience for all gathering skills for a player."""
     logger.info("Calculating total gathering XP...")
     gathering_skills = [
@@ -338,7 +282,7 @@ def calculate_total_gathering_xp(player_data: Dict) -> Optional[int]:
     logger.info("Total gathering XP calculated: %d", total_gathering_xp)
     return total_gathering_xp
 
-def calculate_total_production_xp(player_data: Dict) -> Optional[int]:
+def calculate_total_production_xp(player_data: Dict) -> int:
     """Calculates the total experience for all production skills for a player."""
     logger.info("Calculating total production XP...")
     production_skills = [
@@ -357,7 +301,7 @@ def calculate_total_production_xp(player_data: Dict) -> Optional[int]:
     logger.info("Total production XP calculated: %d", total_production_xp)
     return total_production_xp
 
-def calculate_total_utility_xp(player_data: Dict) -> Optional[int]:
+def calculate_total_utility_xp(player_data: Dict) -> int:
     """Calculates the total experience for all utility skills for a player."""
     logger.info("Calculating total utility XP...")
     utility_skills = [
