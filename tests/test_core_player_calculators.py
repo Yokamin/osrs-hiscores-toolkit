@@ -4,6 +4,8 @@ from src import core_player_calculators as calc
 from src import osrs_data
 import math
 import pytest
+from unittest.mock import patch # Added import for mocking
+import logging # Added import for logging
 
 # --- Test Data Loaders ---
 
@@ -24,6 +26,12 @@ def mock_player_data():
 def combat_level_variants():
     """Provides different player builds for combat level testing."""
     return _load_test_data("combat_level_variants.json")
+
+# Mock the logger to capture messages
+@pytest.fixture(autouse=True)
+def caplog_fixture(caplog):
+    caplog.set_level(logging.INFO) # Set to INFO to capture error messages
+    return caplog
 
 # --- Tests for Status Checks ---
 
@@ -66,6 +74,17 @@ def test_get_level_for_xp(xp, expected_level):
     """Tests get_level_for_xp with various XP values."""
     assert calc.get_level_for_xp(xp) == expected_level
 
+@patch('src.osrs_data.get_xp_table', return_value=[])
+def test_get_level_for_xp_xp_table_not_loaded(mock_get_xp_table, caplog_fixture):
+    """Tests get_level_for_xp when the XP table is not loaded."""
+    assert calc.get_level_for_xp(100) == 1
+    assert "XP table not loaded" in caplog_fixture.text
+    assert caplog_fixture.records[0].levelname == 'ERROR'
+
+def test_get_level_for_xp_negative_xp():
+    """Tests get_level_for_xp with a negative XP value."""
+    assert calc.get_level_for_xp(-1) == 1
+
 @pytest.mark.parametrize("level, expected_xp", [
     (1, 0), (2, 83), (99, 13034431), (126, 188884740)
 ])
@@ -77,6 +96,13 @@ def test_get_xp_for_level_invalid():
     """Tests get_xp_for_level with invalid levels."""
     assert calc.get_xp_for_level(0) is None
     assert calc.get_xp_for_level(127) is None
+
+@patch('src.osrs_data.get_xp_table', return_value=[])
+def test_get_xp_for_level_xp_table_not_loaded(mock_get_xp_table, caplog_fixture):
+    """Tests get_xp_for_level when the XP table is not loaded."""
+    assert calc.get_xp_for_level(50) is None
+    assert "XP table not available" in caplog_fixture.text
+    assert caplog_fixture.records[0].levelname == 'ERROR'
 
 @pytest.mark.parametrize("start_xp, target_xp, diff", [
     (0, 100, 100), (1000, 10000, 9000), (1000, 500, -500)
@@ -92,9 +118,17 @@ def test_calculate_xp_difference(start_xp, target_xp, diff):
 def test_get_xp_to_next_level(current_xp, xp_needed):
     """Tests get_xp_for_next_level with various current XP values."""
     assert calc.get_xp_for_next_level(current_xp) == xp_needed
+
 def test_get_xp_to_next_level_at_max():
     """Tests get_xp_for_next_level at the maximum level."""
     assert calc.get_xp_for_next_level(osrs_data.MAX_XP) is None
+
+@patch('src.core_player_calculators.get_xp_for_level', return_value=None)
+def test_get_xp_to_next_level_xp_for_level_none(mock_get_xp_for_level, caplog_fixture):
+    """Tests get_xp_for_next_level when get_xp_for_level returns None for the next level."""
+    assert calc.get_xp_for_next_level(100) is None
+    assert "Could not determine XP for next level" in caplog_fixture.text
+    assert caplog_fixture.records[1].levelname == 'ERROR'
 
 # --- Tests for XP Aggregators ---
 
