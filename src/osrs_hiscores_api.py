@@ -1,8 +1,9 @@
 import requests
+import logging
 
-# -----------------------------
-# Endpoint definitions
-# -----------------------------
+logger = logging.getLogger(__name__)
+
+# --- Endpoint definitions
 BASE_URLS = {
     "normal":        "https://secure.runescape.com/m=hiscore_oldschool",
     "ironman":       "https://secure.runescape.com/m=hiscore_oldschool_ironman",
@@ -14,9 +15,7 @@ BASE_URLS = {
     "fresh_start":   "https://secure.runescape.com/m=hiscore_oldschool_fresh_start",
 }
 
-# -----------------------------
-# Exceptions
-# -----------------------------
+# --- Exceptions
 class HiscoreError(Exception):
     """Base exception for OSRS Hiscores API errors."""
     pass
@@ -33,9 +32,7 @@ class HiscoreFormatError(HiscoreError):
     """Invalid format specified (must be 'json' or 'csv')."""
     pass
 
-# -----------------------------
-# Helper: build URL
-# -----------------------------
+# --- Helper: build URL
 def build_url(player: str, mode: str = "normal", format: str = "json") -> str:
     """Constructs the OSRS Hiscores API URL for a given player and mode.
 
@@ -54,18 +51,20 @@ def build_url(player: str, mode: str = "normal", format: str = "json") -> str:
         HiscoreFormatError: If an invalid format is specified.
     """
     if mode not in BASE_URLS:
+        logger.error("Invalid mode '%s'. Valid modes: %s", mode, list(BASE_URLS.keys()))
         raise HiscoreModeError(f"Invalid mode '{mode}'. Valid modes: {list(BASE_URLS.keys())}")
 
     if format not in ("json", "csv"):
+        logger.error("Invalid format '%s'. Format must be 'json' or 'csv'", format)
         raise HiscoreFormatError("Format must be 'json' or 'csv'")
 
     endpoint = BASE_URLS[mode]
     ext = "json" if format == "json" else "ws"
-    return f"{endpoint}/index_lite.{ext}?player={player}"
+    url = f"{endpoint}/index_lite.{ext}?player={player}"
+    logger.debug("Built URL: %s", url)
+    return url
 
-# -----------------------------
-# Main function: fetch data
-# -----------------------------
+# --- Main function: fetch data
 def fetch_hiscore(
     player: str,
     mode: str = "normal",
@@ -89,28 +88,33 @@ def fetch_hiscore(
     Raises:
         HiscoreHTTPError: For HTTP status or connection-related errors.
     """
+    logger.info("Attempting to fetch hiscores for player '%s' in '%s' mode (format: %s).", player, mode, format)
     url = build_url(player, mode, format)
 
     try:
         response = requests.get(url, timeout=timeout)
+        logger.debug("HTTP request to %s completed with status %s.", url, response.status_code)
     except requests.RequestException as e:
+        logger.error("HTTP request failed for URL %s: %s", url, e)
         raise HiscoreHTTPError(f"HTTP request failed: {e}") from e
 
     if not response.ok:
+        logger.error("HTTP request to %s returned non-OK status %s.", url, response.status_code)
         raise HiscoreHTTPError(f"HTTP request returned status {response.status_code}")
 
     if format == "json":
         try:
-            return response.json()
+            data = response.json()
+            logger.debug("Successfully parsed JSON response.")
+            return data
         except ValueError as e:
+            logger.error("Failed to parse JSON response from URL %s: %s", url, e)
             raise HiscoreHTTPError(f"Failed to parse JSON response: {e}") from e
     else:
-        # CSV/raw WS text
+        logger.debug("Returning raw text response.")
         return response.text
 
-# -----------------------------
-# Example usage
-# -----------------------------
+# --- Example usage
 def main():
     """Main function to run the script from the command line."""
     import argparse
@@ -135,10 +139,8 @@ def main():
     args = parser.parse_args()
 
     try:
-        print(f"Fetching hiscores for '{args.player}' in '{args.mode}' mode...")
         data = fetch_hiscore(args.player, mode=args.mode, format=args.format)
         
-        # The 'fetch_hiscore' function returns a raw dictionary for json.
         # Pretty-prints JSON for readability when run as a script.
         if args.format == "json":
             print(json.dumps(data, indent=2))
@@ -149,4 +151,5 @@ def main():
         print(f"Error: {e}")
 
 if __name__ == "__main__":
+    # To run this module directly, use: python -m src.osrs_hiscores_api <player_name> [--mode <mode>] [--format <format>]
     main()

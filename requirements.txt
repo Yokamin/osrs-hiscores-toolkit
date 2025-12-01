@@ -1,5 +1,4 @@
 requests
 pytest
-beautifulsoup4
-pandas
-openpyxl
+pytest-html
+pytest-cov

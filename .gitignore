@@ -35,5 +35,12 @@ wheels/
 
 # Project-specific ignores
 NOTES.md
+test.py
+.geminiignore
+
+# Generated reports and logs
+reports/
+logs/
+.coverage
 app.log
 debug.log

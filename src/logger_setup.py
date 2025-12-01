@@ -1,11 +1,12 @@
 import logging
 import sys
+import os # Added import
 from typing import Optional
 
 def setup_logger(
-    app_log_path: Optional[str] = "app.log", 
-    debug_log_path: Optional[str] = "debug.log"
-):
+    app_log_path: Optional[str] = "logs/app.log", # Changed default path
+    debug_log_path: Optional[str] = "logs/debug.log" # Changed default path
+) -> logging.Logger:
     """
     Configures a logger with a console handler and two file handlers.
 
@@ -14,6 +15,15 @@ def setup_logger(
                                      If None, this handler is skipped.
         debug_log_path (Optional[str]): Path for the DEBUG level log file.
                                         If None, this handler is skipped.
+
+    Returns:
+        logging.Logger: The configured root logger instance.
+
+    Example:
+        >>> import logging
+        >>> logger = setup_logger(app_log_path="my_app.log", debug_log_path=None)
+        >>> logger.info("This is an info message.")
+        >>> logger.debug("This is a debug message, only visible if debug_log_path is set.")
     """
     # Get the root logger
     logger = logging.getLogger()
@@ -38,6 +48,7 @@ def setup_logger(
 
     # --- App Log File Handler (INFO level) ---
     if app_log_path:
+        os.makedirs(os.path.dirname(app_log_path), exist_ok=True) # Added
         app_log_handler = logging.FileHandler(app_log_path, mode='a')
         app_log_handler.setLevel(logging.INFO)
         app_log_handler.setFormatter(info_formatter)
@@ -45,6 +56,7 @@ def setup_logger(
 
     # --- Debug Log File Handler (DEBUG level) ---
     if debug_log_path:
+        os.makedirs(os.path.dirname(debug_log_path), exist_ok=True) # Added
         debug_log_handler = logging.FileHandler(debug_log_path, mode='a')
         debug_log_handler.setLevel(logging.DEBUG)
         debug_log_handler.setFormatter(debug_formatter)
